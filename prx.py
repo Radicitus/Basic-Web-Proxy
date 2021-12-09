@@ -3,11 +3,27 @@ import socket
 import sys
 
 
+def process_base_url(base):
+    port_idx = base.find(":")
+    url_res_idx = base.find("/")
+
+    if url_res_idx == -1:
+        url_res_idx = len(base)
+
+    if port_idx == -1 or url_res_idx < port_idx:
+        url_port = 80
+        url = base[:url_res_idx]
+    else:
+        url_port = int((base[(port_idx + 1):])[:url_res_idx - port_idx - 1])
+        url = base[:port_idx]
+    return [url, url_port]
+
+
 def proxy(url, port, conn, data):
     print("Proxy Initiated... ")
-    print("URL: ", url,  " Port: ", port, " Data: ", data)
+    print("URL: ", url, " Port: ", port, " Data: ", data)
     prx = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    prx.settimeout(100)
+    prx.settimeout(50)
     try:
         prx.connect((url, port))
         prx.send(data)
@@ -31,6 +47,7 @@ def proxy(url, port, conn, data):
         sys.exit()
     print("Proxy Task Completed!")
 
+
 # Take Host IP and Port # from cli arguments
 if len(sys.argv) != 2:
     raise Exception("ERROR! Usage: script, Port #")
@@ -50,6 +67,9 @@ print("Starting proxy server on port " + str(port))
 # Client vars
 connections = [srv]
 request_counter = 0
+redirect = False
+redirect_url = ""
+mobile = False
 
 while True:
     try:
@@ -73,24 +93,32 @@ while True:
                         if http_idx == -1:
                             base_url = req_url
                         else:
-                            base_url = req_url[(http_idx+3):]
+                            base_url = req_url[(http_idx + 3):]
 
-                        port_idx = base_url.find(":")
-                        url_res_idx = base_url.find("/")
+                        # Checks for special features
+                        start_redir_feat = base_url.find("start_redirect")
+                        stop_redir_feat = base_url.find("stop_redirect")
+                        start_mobile_feat = base_url.find("start_mobile")
+                        stop_mobile_feat = base_url.find("stop_mobile")
+                        if start_redir_feat != -1:
+                            redirect = True
+                            redirect_url = base_url[start_redir_feat + 15:]
+                        if stop_redir_feat != -1:
+                            redirect_url = False
+                        if start_mobile_feat != -1:
+                            mobile = True
+                        if start_mobile_feat != -1:
+                            mobile = False
 
-                        if url_res_idx == -1:
-                            url_res_idx = len(base_url)
-                        url = ""
-                        url_port = -1
+                        # Check redirect
+                        if redirect:
+                            old_base_url = base_url
+                            old_url = process_base_url(base_url)[0]
+                            base_url = redirect_url
+                            data = data.replace(old_base_url, base_url)
+                            data = data.replace(old_url, base_url)
 
-                        if port_idx == -1 or url_res_idx < port_idx:
-                            url_port = 80
-                            url = base_url[:url_res_idx]
-                        else:
-                            url_port = int((base_url[(port_idx+1):])[:url_res_idx - port_idx - 1])
-                            url = base_url[:port_idx]
-
-                        proxy(url, url_port, s, raw_data)
+                        proxy(process_base_url(base_url)[0], process_base_url(base_url)[1], s, data.encode())
                     except Exception as e:
                         print(e)
                         pass
@@ -108,5 +136,3 @@ while True:
         print("\nexit")
         srv.close()
         sys.exit()
-
-

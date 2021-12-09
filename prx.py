@@ -4,24 +4,32 @@ import sys
 
 
 def proxy(url, port, conn, data):
+    print("Proxy Initiated... ")
+    print("URL: ", url,  " Port: ", port, " Data: ", data)
     prx = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    prx.settimeout(2)
     try:
         prx.connect((url, port))
         prx.send(data)
 
-        while True:
-            reply = prx.recv(1024)
-            if len(reply) > 0:
-                conn.send(reply)
-            else:
+        while 1:
+            try:
+                reply = prx.recv(1024)
+                print(" REPLY PART: ", reply)
+                if len(reply) > 0:
+                    conn.send(reply)
+                else:
+                    break
+            except Exception as tm:
+                print(tm)
                 break
         prx.close()
-        conn.close()
 
-    except socket.error:
+    except Exception as prx_error:
+        print(prx_error)
         prx.close()
-        conn.close()
         sys.exit()
+    print("Proxy Task Completed!")
 
 # Take Host IP and Port # from cli arguments
 if len(sys.argv) != 2:
@@ -53,9 +61,8 @@ while True:
                 connections.append(connection)
             else:
                 raw_data = s.recv(1024)
-                data = raw_data.decode('utf-8')
+                data = raw_data.decode(encoding='utf-8', errors='ignore')
                 if data:
-                    #TODO: Add request functionality
                     try:
                         req_url_header = data.split('\n')[0]
                         req_url = req_url_header.split(' ')[1]
@@ -82,7 +89,8 @@ while True:
                             url = base_url[:port_idx]
 
                         proxy(url, url_port, s, raw_data)
-                    except:
+                    except Exception as e:
+                        print(e)
                         pass
                 else:
 

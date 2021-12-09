@@ -3,6 +3,26 @@ import socket
 import sys
 
 
+def proxy(url, port, conn, data):
+    prx = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        prx.connect((url, port))
+        prx.send(data)
+
+        while True:
+            reply = prx.recv(1024)
+            if len(reply) > 0:
+                conn.send(reply)
+            else:
+                break
+        prx.close()
+        conn.close()
+
+    except socket.error:
+        prx.close()
+        conn.close()
+        sys.exit()
+
 # Take Host IP and Port # from cli arguments
 if len(sys.argv) != 2:
     raise Exception("ERROR! Usage: script, Port #")
@@ -61,7 +81,7 @@ while True:
                             url_port = int((base_url[(port_idx+1):])[:url_res_idx - port_idx - 1])
                             url = base_url[:port_idx]
 
-                        print("Port: ", url_port, " URL: ", url)
+                        proxy(url, url_port, s, raw_data)
                     except:
                         pass
                 else:
@@ -79,5 +99,4 @@ while True:
         srv.close()
         sys.exit()
 
-def proxy(url, port, conn, addr, data):
-    return
+

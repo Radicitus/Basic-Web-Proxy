@@ -7,7 +7,7 @@ def proxy(url, port, conn, data):
     print("Proxy Initiated... ")
     print("URL: ", url,  " Port: ", port, " Data: ", data)
     prx = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    prx.settimeout(2)
+    prx.settimeout(100)
     try:
         prx.connect((url, port))
         prx.send(data)
@@ -43,7 +43,7 @@ srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 srv.setblocking(0)
 srv.bind(srv_addr)
-srv.listen(5)
+srv.listen(1)
 
 print("Starting proxy server on port " + str(port))
 
@@ -65,6 +65,8 @@ while True:
                 if data:
                     try:
                         req_url_header = data.split('\n')[0]
+                        if req_url_header.split(' ')[0] != 'GET':
+                            continue
                         req_url = req_url_header.split(' ')[1]
                         http_idx = req_url.find("://")
 

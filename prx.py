@@ -114,7 +114,7 @@ def proxy(url, port, conn, data):
         prx.close()
 
 
-# Take Host IP and Port # from cli arguments
+# Take Port # from cli arguments
 if len(sys.argv) != 2:
     raise Exception("ERROR! Usage: script, Port #")
 cli_args = sys.argv

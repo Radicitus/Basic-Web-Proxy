@@ -3,8 +3,8 @@ import socket
 import sys
 
 
-def log(num, red, mob, cli_ip, cli_prt, req_f_cli, ua_f_cli, dst_dmn, dst_prt, req_t_dst,
-        ua_t_dst, stat_dst, mime_type, mime_size):
+def log(num, red, mob, cli_ip, cli_prt, req_f_cli, ua_f_cli, dst_dmn,
+        dst_prt, req_t_dst, ua_t_dst, stat_dst, mime_type, mime_size):
     line0 = "-------------------------------------------------------"
     line1 = num + " [" + red + "] Redirection [" + mob + "] Mobile\n"
     line2 = "[CLI connected to " + cli_ip + ":" + cli_prt + "]\n"
@@ -52,11 +52,14 @@ def proxy(url, port, conn, data):
         prx.connect((url, port))
         prx.send(data)
 
+        first_reply = None
         while 1:
             try:
                 reply = prx.recv(1024)
                 print(" REPLY PART: ", reply)
                 if len(reply) > 0:
+                    if not first_reply:
+                        first_reply = reply
                     conn.send(reply)
                     chk_hdr = reply.decode(errors='ignore')[:20]
                     if chk_hdr.find("404") > 0 or chk_hdr.find("400") > 0:
@@ -68,11 +71,25 @@ def proxy(url, port, conn, data):
                 break
         prx.close()
 
+        # # Print logs
+        # decode_data = data.decode(encoding='utf-8', errors='ignore')
+        # decode_reply = first_reply.decode(encoding='utf-8', errors='ignore')
+        # req_frm_cli_start = ""
+        # req_frm_cli = ""
+        # ua_frm_cli = ""
+        # req_to_dst = ""
+        # ua_to_dst = ""
+        # stat_code_dst = ""
+        # mime_typ = ""
+        # mime_sz = ""
+        #
+        # log(request_counter, "O" if redirect else "X", "O" if mobile else "X", address[0], address[1],
+        #     req_frm_cli, ua_frm_cli, url, port, req_to_dst, ua_to_dst, stat_code_dst, mime_typ, mime_sz)
+
     except Exception as prx_error:
         print(prx_error)
         prx.close()
         sys.exit()
-    print("Proxy Task Completed!")
 
 
 # Take Host IP and Port # from cli arguments
@@ -156,16 +173,17 @@ while True:
                             data = data.replace(base_url, process_base_url(base_url)[0] + '/')
 
                         # Check if persistent connection
-                        if data.find("Connection:"):
+                        if data.find("Connection:") > 0:
                             conn_header_start = data.find("Connection:")
-                            conn_header_end = data.find("\r\n", conn_header_start) + 2
-                            data = data.replace(data[conn_header_start: conn_header_end], "")
-                        if data.find("Keep-Alive:"):
+                            conn_header_end = data.find("\r\n", conn_header_start)
+                            data = data.replace(data[conn_header_start: conn_header_end], "Connection: close")
+                        if data.find("Keep-Alive:") > 0:
                             ka_header_start = data.find("Keep-Alive:")
                             ka_header_end = data.find("\r\n", ka_header_start) + 2
                             data = data.replace(data[ka_header_start: ka_header_end], "")
 
                         proxy(process_base_url(base_url)[0], process_base_url(base_url)[1], s, data.encode())
+                        request_counter += 1
                     except Exception as e:
                         print(e)
                         pass

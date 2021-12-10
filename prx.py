@@ -5,13 +5,12 @@ import sys
 
 def log(num, red, mob, cli_ip, cli_prt, req_f_cli, ua_f_cli, dst_dmn,
         dst_prt, req_t_dst, ua_t_dst, stat_dst, mime_type, mime_size):
-    line0 = "-------------------------------------------------------"
-    line1 = num + " [" + red + "] Redirection [" + mob + "] Mobile\n"
-    line2 = "[CLI connected to " + cli_ip + ":" + cli_prt + "]\n"
+    line1 = str(num) + " [" + red + "] Redirection [" + mob + "] Mobile\n"
+    line2 = "[CLI connected to " + str(cli_ip) + ":" + str(cli_prt) + "]\n"
     line3 = "[CLI ==> PRX --- SRV]\n"
     line4 = "> " + req_f_cli + "\n"
     line5 = "> " + ua_f_cli + "\n"
-    line6 = "[SRV connected to " + dst_dmn + ":" + dst_prt + "]\n"
+    line6 = "[SRV connected to " + dst_dmn + ":" + str(dst_prt) + "]\n"
     line7 = "[CLI --- PRX ==> SRV]\n"
     line8 = "> " + req_t_dst + "\n"
     line9 = "> " + ua_t_dst + "\n"
@@ -21,10 +20,10 @@ def log(num, red, mob, cli_ip, cli_prt, req_f_cli, ua_f_cli, dst_dmn,
     line13 = "[CLI <== PRX --- SRV]\n"
     line14 = "> " + stat_dst + "\n"
     line15 = "> " + mime_type + " " + mime_size + "bytes\n"
-    line16 = "[CLI disconnected]"
+    line16 = "[CLI disconnected]\n"
     line17 = "-------------------------------------------------------"
-    print(line0, line1, line2, line3, line4, line5, line6, line7, line8, line9,
-          line10, line11, line12, line13, line14, line15, line16, line17)
+    print(line1 + line2 + line3 + line4 + line5 + line6 + line7 + line8 + line9 +
+          line10 + line11 + line12 + line13 + line14 + line15 + line16 + line17)
 
 
 def process_base_url(base):
@@ -44,8 +43,7 @@ def process_base_url(base):
 
 
 def proxy(url, port, conn, data):
-    print("Proxy Initiated... ")
-    print("URL: ", url, " Port: ", port, " Data: ", data)
+    # print("Proxy Start: ", "URL: ", url, " Port: ", port, " Data: ", data)
     prx = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     prx.settimeout(50)
     try:
@@ -56,38 +54,60 @@ def proxy(url, port, conn, data):
         while 1:
             try:
                 reply = prx.recv(1024)
-                print(" REPLY PART: ", reply)
+                # print(" REPLY PART: ", reply)
                 if len(reply) > 0:
                     if not first_reply:
                         first_reply = reply
                     conn.send(reply)
-                    chk_hdr = reply.decode(errors='ignore')[:20]
+                    chk_hdr = reply.decode(errors='ignore')
                     if chk_hdr.find("404") > 0 or chk_hdr.find("400") > 0:
                         break
                 else:
                     break
             except Exception as tm:
-                print(tm)
+                print("Inner Proxy: ", tm)
                 break
         prx.close()
 
-        # # Print logs
-        # decode_data = data.decode(encoding='utf-8', errors='ignore')
-        # decode_reply = first_reply.decode(encoding='utf-8', errors='ignore')
-        # req_frm_cli_start = ""
-        # req_frm_cli = ""
-        # ua_frm_cli = ""
-        # req_to_dst = ""
-        # ua_to_dst = ""
-        # stat_code_dst = ""
-        # mime_typ = ""
-        # mime_sz = ""
-        #
-        # log(request_counter, "O" if redirect else "X", "O" if mobile else "X", address[0], address[1],
-        #     req_frm_cli, ua_frm_cli, url, port, req_to_dst, ua_to_dst, stat_code_dst, mime_typ, mime_sz)
+        # Print logs
+        decode_reply = first_reply.decode(encoding='utf-8', errors='ignore')
+
+        req_frm_cli = "GET " + orig_url
+        ua_frm_cli = orig_ua
+
+        if redirect:
+            req_to_dst = "GET " + redirect_url
+        else:
+            req_to_dst = req_frm_cli
+
+        if mobile:
+            ua_to_dst = "Mozilla/5.0 (Android 7.0; Mobile; rv:54.0) Gecko/54.0 Firefox/54.0"
+        else:
+            ua_to_dst = ua_frm_cli
+
+        stat_code_dst_start = decode_reply.find(" ") + 1
+        stat_code_dst_end = decode_reply.find("\r\n", stat_code_dst_start)
+        stat_code_dst = decode_reply[stat_code_dst_start:stat_code_dst_end]
+
+        if decode_reply.find("Content-Type:") > 0:
+            mime_typ_start = decode_reply.find("Content-Type: ") + 14
+            mime_typ_end = decode_reply.find("\r\n", mime_typ_start)
+            mime_typ = decode_reply[mime_typ_start:mime_typ_end]
+        else:
+            mime_typ = "None"
+
+        if decode_reply.find("Content-Length:") > 0:
+            mime_sz_start = decode_reply.find("Content-Length: ") + 16
+            mime_sz_end = decode_reply.find("\r\n", mime_sz_start)
+            mime_sz = decode_reply[mime_sz_start:mime_sz_end]
+        else:
+            mime_sz = "0"
+
+        log(request_counter, "O" if redirect else "X", "O" if mobile else "X", address[0], address[1],
+            req_frm_cli, ua_frm_cli, url, port, req_to_dst, ua_to_dst, stat_code_dst, mime_typ, mime_sz)
 
     except Exception as prx_error:
-        print(prx_error)
+        print("Proxy: ", prx_error)
         prx.close()
         sys.exit()
 
@@ -107,13 +127,16 @@ srv.bind(srv_addr)
 srv.listen(1)
 
 print("Starting proxy server on port " + str(port))
+print("-------------------------------------------------------")
 
 # Client vars
 connections = [srv]
 request_counter = 0
 redirect = False
 redirect_url = ""
+orig_url = ""
 mobile = False
+orig_ua = ""
 
 while True:
     try:
@@ -149,12 +172,15 @@ while True:
                             redirect_url = base_url[start_redir_feat + 15:]
                         if stop_redir_feat != -1:
                             redirect_url = False
+                            orig_url = ""
                         if start_mobile_feat != -1:
                             mobile = True
                         if stop_mobile_feat != -1:
                             mobile = False
+                            orig_ua = ""
 
                         # # Check redirect
+                        orig_url = base_url
                         # if redirect:
                         #     old_base_url = base_url
                         #     old_url = process_base_url(base_url)[0]
@@ -163,13 +189,12 @@ while True:
                         #     data = data.replace(old_url, base_url)
 
                         # Check mobile
+                        user_agent_start = data.find("User-Agent:") + 12
+                        user_agent_end = data.find("\r\n", user_agent_start) + 1
+                        orig_ua = data[user_agent_start:user_agent_end - 1]
                         if mobile:
-                            user_agent_start = data.find("User-Agent:") + 12
-                            user_agent_end = data.find("\r\n", user_agent_start) + 1
                             data = data.replace(data[user_agent_start:user_agent_end],
-                                                'Mozilla/5.0 (Linux; Android 7.0; SM-G930V Build/NRD90M) '
-                                                'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.125 '
-                                                'Mobile Safari/537.36\r')
+                                                'Mozilla/5.0 (Android 7.0; Mobile; rv:54.0) Gecko/54.0 Firefox/54.0\r')
                             data = data.replace(base_url, process_base_url(base_url)[0] + '/')
 
                         # Check if persistent connection
@@ -185,7 +210,7 @@ while True:
                         proxy(process_base_url(base_url)[0], process_base_url(base_url)[1], s, data.encode())
                         request_counter += 1
                     except Exception as e:
-                        print(e)
+                        print("Server: ", e)
                         pass
                 else:
 
@@ -194,7 +219,7 @@ while True:
 
                     # Close the socket
                     s.close()
-    except KeyboardInterrupt:
-        print("\nexit")
+    except:
+        print("[SRV disconnected]")
         srv.close()
         sys.exit()

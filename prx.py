@@ -134,7 +134,7 @@ print("-------------------------------------------------------")
 
 # Client vars
 connections = [srv]
-request_counter = 0
+request_counter = 1
 redirect = False
 redirect_url = ""
 orig_url = ""
@@ -224,6 +224,5 @@ while True:
                     # Close the socket
                     s.close()
     except:
-        print("[SRV disconnected]")
         srv.close()
         sys.exit()

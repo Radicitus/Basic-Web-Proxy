@@ -21,9 +21,10 @@ def log(num, red, mob, cli_ip, cli_prt, req_f_cli, ua_f_cli, dst_dmn,
     line14 = "> " + stat_dst + "\n"
     line15 = "> " + mime_type + " " + mime_size + "bytes\n"
     line16 = "[CLI disconnected]\n"
-    line17 = "-------------------------------------------------------"
+    line17 = "[SRV disconnected]\n"
+    line18 = "-------------------------------------------------------"
     print(line1 + line2 + line3 + line4 + line5 + line6 + line7 + line8 + line9 +
-          line10 + line11 + line12 + line13 + line14 + line15 + line16 + line17)
+          line10 + line11 + line12 + line13 + line14 + line15 + line16 + line17 + line18)
 
 
 def process_base_url(base):

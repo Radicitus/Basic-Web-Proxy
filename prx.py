@@ -23,7 +23,7 @@ def proxy(url, port, conn, data):
     print("Proxy Initiated... ")
     print("URL: ", url, " Port: ", port, " Data: ", data)
     prx = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    prx.settimeout(50)
+    prx.settimeout(100)
     try:
         prx.connect((url, port))
         prx.send(data)
@@ -63,6 +63,7 @@ srv.bind(srv_addr)
 srv.listen(1)
 
 print("Starting proxy server on port " + str(port))
+print("---------------------------------------------")
 
 # Client vars
 connections = [srv]
@@ -128,6 +129,16 @@ while True:
                                                 'Mobile Safari/537.36\r')
                             data = data.replace(base_url, process_base_url(base_url)[0] + '/')
 
+                        # Check if persistent connection
+                        if data.find("Connection:"):
+                            conn_header_start = data.find("Connection:")
+                            conn_header_end = data.find("\r\n", conn_header_start) + 2
+                            data = data.replace(data[conn_header_start: conn_header_end], "")
+                        if data.find("Keep-Alive:"):
+                            ka_header_start = data.find("Keep-Alive:")
+                            ka_header_end = data.find("\r\n", ka_header_start) + 2
+                            data = data.replace(data[ka_header_start: ka_header_end], "")
+
                         proxy(process_base_url(base_url)[0], process_base_url(base_url)[1], s, data.encode())
                     except Exception as e:
                         print(e)
@@ -136,9 +147,6 @@ while True:
 
                     # Remove the disconnected client
                     connections.remove(s)
-
-                    # Log client disconnect
-                    print("[CLI disconnected]")
 
                     # Close the socket
                     s.close()

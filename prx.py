@@ -199,7 +199,7 @@ while True:
                         if mobile:
                             data = data.replace(data[user_agent_start:user_agent_end],
                                                 'Mozilla/5.0 (Android 7.0; Mobile; rv:54.0) Gecko/54.0 Firefox/54.0\r')
-                            data = data.replace(base_url, process_base_url(base_url)[0] + '/')
+                            # data = data.replace(base_url, process_base_url(base_url)[0] + '/')
 
                         # Check if persistent connection
                         if data.find("Connection:") > 0:

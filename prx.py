@@ -174,7 +174,8 @@ while True:
                             redirect = True
                             redirect_url = base_url[start_redir_feat + 15:]
                         if stop_redir_feat != -1:
-                            redirect_url = False
+                            redirect = False
+                            redirect_url = ""
                             orig_url = ""
                         if start_mobile_feat != -1:
                             mobile = True
@@ -184,12 +185,12 @@ while True:
 
                         # Check redirect
                         orig_url = base_url
-                        # if redirect:
-                        #     old_base_url = base_url
-                        #     old_url = process_base_url(base_url)[0]
-                        #     base_url = redirect_url
-                        #     data = data.replace(old_base_url, base_url)
-                        #     data = data.replace(old_url, base_url)
+                        if redirect:
+                            old_base_url = base_url
+                            old_url = process_base_url(base_url)[0]
+                            base_url = redirect_url
+                            data = data.replace(old_base_url, base_url)
+                            data = data.replace(old_url, base_url)
 
                         # Check mobile
                         user_agent_start = data.find("User-Agent:") + 12

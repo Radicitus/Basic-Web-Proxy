@@ -112,7 +112,6 @@ def proxy(url, port, conn, data):
     except Exception as prx_error:
         print("Proxy: ", prx_error)
         prx.close()
-        sys.exit()
 
 
 # Take Host IP and Port # from cli arguments

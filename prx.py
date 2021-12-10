@@ -45,7 +45,7 @@ def process_base_url(base):
 def proxy(url, port, conn, data):
     # print("Proxy Start: ", "URL: ", url, " Port: ", port, " Data: ", data)
     prx = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    prx.settimeout(50)
+    prx.settimeout(100)
     try:
         prx.connect((url, port))
         prx.send(data)
@@ -65,9 +65,12 @@ def proxy(url, port, conn, data):
                 else:
                     break
             except Exception as tm:
-                print("Inner Proxy: ", tm)
+                print("Inner Proxy: ", tm, " Data: ", data)
                 break
         prx.close()
+
+        if not first_reply:
+            raise Exception("Reply was empty.")
 
         # Print logs
         decode_reply = first_reply.decode(encoding='utf-8', errors='ignore')
@@ -92,7 +95,7 @@ def proxy(url, port, conn, data):
         if decode_reply.find("Content-Type:") > 0:
             mime_typ_start = decode_reply.find("Content-Type: ") + 14
             mime_typ_end = decode_reply.find("\r\n", mime_typ_start)
-            mime_typ = decode_reply[mime_typ_start:mime_typ_end]
+            mime_typ = decode_reply[mime_typ_start:mime_typ_end].split(";")[0]
         else:
             mime_typ = "None"
 
@@ -179,7 +182,7 @@ while True:
                             mobile = False
                             orig_ua = ""
 
-                        # # Check redirect
+                        # Check redirect
                         orig_url = base_url
                         # if redirect:
                         #     old_base_url = base_url

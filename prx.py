@@ -3,6 +3,30 @@ import socket
 import sys
 
 
+def log(num, red, mob, cli_ip, cli_prt, req_f_cli, ua_f_cli, dst_dmn, dst_prt, req_t_dst,
+        ua_t_dst, stat_dst, mime_type, mime_size):
+    line0 = "-------------------------------------------------------"
+    line1 = num + " [" + red + "] Redirection [" + mob + "] Mobile\n"
+    line2 = "[CLI connected to " + cli_ip + ":" + cli_prt + "]\n"
+    line3 = "[CLI ==> PRX --- SRV]\n"
+    line4 = "> " + req_f_cli + "\n"
+    line5 = "> " + ua_f_cli + "\n"
+    line6 = "[SRV connected to " + dst_dmn + ":" + dst_prt + "]\n"
+    line7 = "[CLI --- PRX ==> SRV]\n"
+    line8 = "> " + req_t_dst + "\n"
+    line9 = "> " + ua_t_dst + "\n"
+    line10 = "[CLI --- PRX <== SRV]\n"
+    line11 = "> " + stat_dst + "\n"
+    line12 = "> " + mime_type + " " + mime_size + "bytes\n"
+    line13 = "[CLI <== PRX --- SRV]\n"
+    line14 = "> " + stat_dst + "\n"
+    line15 = "> " + mime_type + " " + mime_size + "bytes\n"
+    line16 = "[CLI disconnected]"
+    line17 = "-------------------------------------------------------"
+    print(line0, line1, line2, line3, line4, line5, line6, line7, line8, line9,
+          line10, line11, line12, line13, line14, line15, line16, line17)
+
+
 def process_base_url(base):
     port_idx = base.find(":")
     url_res_idx = base.find("/")
@@ -23,7 +47,7 @@ def proxy(url, port, conn, data):
     print("Proxy Initiated... ")
     print("URL: ", url, " Port: ", port, " Data: ", data)
     prx = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    prx.settimeout(100)
+    prx.settimeout(50)
     try:
         prx.connect((url, port))
         prx.send(data)
@@ -34,6 +58,9 @@ def proxy(url, port, conn, data):
                 print(" REPLY PART: ", reply)
                 if len(reply) > 0:
                     conn.send(reply)
+                    chk_hdr = reply.decode(errors='ignore')[:20]
+                    if chk_hdr.find("404") > 0 or chk_hdr.find("400") > 0:
+                        break
                 else:
                     break
             except Exception as tm:
@@ -63,7 +90,6 @@ srv.bind(srv_addr)
 srv.listen(1)
 
 print("Starting proxy server on port " + str(port))
-print("---------------------------------------------")
 
 # Client vars
 connections = [srv]

@@ -107,16 +107,26 @@ while True:
                             redirect_url = False
                         if start_mobile_feat != -1:
                             mobile = True
-                        if start_mobile_feat != -1:
+                        if stop_mobile_feat != -1:
                             mobile = False
 
-                        # Check redirect
-                        if redirect:
-                            old_base_url = base_url
-                            old_url = process_base_url(base_url)[0]
-                            base_url = redirect_url
-                            data = data.replace(old_base_url, base_url)
-                            data = data.replace(old_url, base_url)
+                        # # Check redirect
+                        # if redirect:
+                        #     old_base_url = base_url
+                        #     old_url = process_base_url(base_url)[0]
+                        #     base_url = redirect_url
+                        #     data = data.replace(old_base_url, base_url)
+                        #     data = data.replace(old_url, base_url)
+
+                        # Check mobile
+                        if mobile:
+                            user_agent_start = data.find("User-Agent:") + 12
+                            user_agent_end = data.find("\r\n", user_agent_start) + 1
+                            data = data.replace(data[user_agent_start:user_agent_end],
+                                                'Mozilla/5.0 (Linux; Android 7.0; SM-G930V Build/NRD90M) '
+                                                'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/59.0.3071.125 '
+                                                'Mobile Safari/537.36\r')
+                            data = data.replace(base_url, process_base_url(base_url)[0] + '/')
 
                         proxy(process_base_url(base_url)[0], process_base_url(base_url)[1], s, data.encode())
                     except Exception as e:

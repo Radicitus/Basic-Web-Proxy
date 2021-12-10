@@ -223,6 +223,6 @@ while True:
 
                     # Close the socket
                     s.close()
-    except:
+    except KeyboardInterrupt:
         srv.close()
         sys.exit()
